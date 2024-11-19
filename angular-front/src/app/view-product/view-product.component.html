@@ -1,0 +1,21 @@
+<div class="container mt-4">
+  <h1 style="text-align: center;">List of Products</h1>
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+    <div *ngFor="let product of products" class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <h4 class="card-title">{{ product.title }}</h4>
+          <p class="card-text">
+            <strong>Artist:</strong> {{ product.artist }} <br />
+            <strong>Release Year:</strong> {{ product.release_year }} <br />
+            <strong>Genre:</strong> {{ product.genre }} <br />
+            <strong>Styles:</strong> {{ product.styles }}
+          </p>
+          <button class="btn btn-primary" (click)="editProduct(product.discogs_id)">Edit</button>
+          <button class="btn btn-info" (click)="viewDetails(product.discogs_id)">View Details</button>
+          <button class="btn btn-danger" (click)="confirmDelete(product.discogs_id)">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
