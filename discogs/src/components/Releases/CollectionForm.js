@@ -1,9 +1,10 @@
 import React, { useState }  from 'react';
 import { useAuthContext } from '../../AuthContext';
-import { postData } from '../../utility/dataSource';
+import { useDiscogs } from '../../utility/dataSource';
 
 
 const CollectionForm = ({id, title}) => {
+    const { postData } = useDiscogs();
     const { authState } = useAuthContext();
     const [collectionData, setCollectionData] = useState({
         notes: '',
