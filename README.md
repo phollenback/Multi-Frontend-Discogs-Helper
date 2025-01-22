@@ -15,7 +15,8 @@
 <img width="1412" alt="Image" src="https://github.com/user-attachments/assets/58b5b552-4840-49e5-8484-13a99adf8a24" />
 
 <p><i>Allows full control over wantlist and collection, and will also will be synced with the discogs site</i></p>
-
+<img width="1440" alt="Image" src="https://github.com/user-attachments/assets/ac617fee-fb03-4533-9d14-292725b28b75" />
 
 <p><i>Provides extensive detail about all releases, including pricing and tracklisting</i></p>
+<img width="1412" alt="Image" src="https://github.com/user-attachments/assets/a1170aea-351d-4b08-b8f1-fdd07749ed04" />
 
