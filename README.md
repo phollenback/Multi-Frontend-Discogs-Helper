@@ -1,7 +1,7 @@
 <h1>Discogs Helper</h1><br/>
 
 <ul>
-  <li><a>View the techology used.</a></li>
+  <li><a href="">View the techology used here.</a></li>
 </ul>
 
 <h5>
