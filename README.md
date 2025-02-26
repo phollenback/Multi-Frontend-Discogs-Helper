@@ -1,7 +1,7 @@
 <h1>Discogs Helper</h1><br/>
 
 <ul>
-  <li><a href="#tech-used">View the technology used here.</a></li>
+  <li><b><a href="#tech-used">View the technology used here.</a></b></li>
 </ul>
 
 <h5>
@@ -25,4 +25,13 @@
 <p><i>Provides extensive detail about all releases, including pricing and tracklisting</i></p>
 <img width="1412" alt="Image" src="https://github.com/user-attachments/assets/a1170aea-351d-4b08-b8f1-fdd07749ed04" />
 
-<h1 id="tech-used">tech i used</h1>
+<h1 id="tech-used">Key Technology in this Project</h1>
+
+<h3>React Hook Form</h3>
+Powered most forms included in the app. Allowed for effortless management login behavior by providing login, register, and handleSubmit functions tied into the forms behavior.
+
+<h3>Context API</h3>
+Utilized the context hooks from react to verify if a user is allowed to visit routes. This includes cookie management using the react-cookie library to manage session.
+
+<h3>Axios</h3>
+Standard http request library, axios provides easy to use, readable request code to utilize backend services like my own or the Discogs API. Axios is helpful because it easily provides useful error messages and allows for extra complexity is necessary especially when leveraging third party services.
