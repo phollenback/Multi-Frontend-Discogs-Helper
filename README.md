@@ -1,4 +1,9 @@
 <h1>Discogs Helper</h1><br/>
+
+<ul>
+  <li><a>View the techology used.</a></li>
+</ul>
+
 <h5>
   Discogs Helper allows users to search for and manage there collection of vinyl records. By leveraging the Discogs API I was able to sync up a users collection and wantlist
   according to there account with Discogs. Users can add, update, delete, and view records in their collection, which includes details such as title, artist,
