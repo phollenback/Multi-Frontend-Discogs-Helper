@@ -28,7 +28,7 @@
 <h1 id="tech-used">Key Technology in this Project</h1>
 
 <h3>React Hook Form</h3>
-Powered most forms included in the app. Allowed for effortless management login behavior by providing login, register, and handleSubmit functions tied into the forms behavior.
+Powered most forms included in the app. Allowed for effortless  login behavior management by providing login, register, and handleSubmit functions tied into the forms behavior.
 
 <h3>Context API</h3>
 Utilized the context hooks from react to verify if a user is allowed to visit routes. This includes cookie management using the react-cookie library to manage session.
