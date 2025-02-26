@@ -4,6 +4,8 @@
   <li><b><a href="#tech-used">View the technology used here.</a></b></li>
 </ul>
 
+(the pictures in this markdown are from the NEXT/Tailwind version of the app I created)
+
 <h5>
   Discogs Helper allows users to search for and manage their collection of vinyl records. By leveraging the Discogs API I was able to sync up a user's collection and wantlist
   according to their account with Discogs. Users can add, update, delete, and view records in their collection, which includes details such as title, artist,
