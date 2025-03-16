@@ -37,3 +37,6 @@ Utilized the context hooks from react to verify if a user is allowed to visit ro
 
 <h3>Axios</h3>
 Standard http request library, axios provides easy to use, readable request code to utilize backend services like my own or the Discogs API. Axios is helpful because it easily provides useful error messages and allows for extra complexity is necessary especially when leveraging third party services.
+
+<h3>Discogs API</h3>
+Leveraged to manage my personal collection and allow for searching of vinyl releases. Overall good documentation and experienced minimal rate limits. 
