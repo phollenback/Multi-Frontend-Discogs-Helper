@@ -4,7 +4,7 @@ import { User } from './users.model'
 import { userQueries } from './users.queries'
 
 export const readUsers = async ()  => {
-    console.log('in readAlbums')
+    console.log('in readUsers')
     return execute<User[]>(userQueries.readUsers, []);
 };
 

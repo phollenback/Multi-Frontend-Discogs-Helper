@@ -57,3 +57,22 @@ export const execute = <T>(query: string, params: string[] | Object) : Promise<T
         throw new Error('Failed to execute MySql query');
     }
 }
+
+export const checkDbConnection = (): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+        if (!pool) {
+            initializeMySqlConnector();
+        }
+        pool!.getConnection((err, connection) => {
+            if (err) {
+                console.error('DB connection failed:', err);
+                reject(false);
+            } else {            
+                console.log('DB connection successful');
+
+                connection.release();
+                resolve(true);
+            }
+        });
+    });
+}

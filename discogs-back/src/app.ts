@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+dotenv.config();
+
 import express from 'express'
 import recordRouter from './records/records.routes'
 import collectionRouter from './collection/collection.routes'
@@ -5,10 +8,20 @@ import suggestionsRouter from './helpers/suggestions.routes'
 import userRoutes from './users/users.routes'
 import cors from 'cors'
 import helmet from 'helmet'
-import dotenv from 'dotenv'
+import { checkDbConnection, initializeMySqlConnector } from './services/mysql.connector'
 
 
-dotenv.config();
+const useDb = async () => {
+    try {
+        await checkDbConnection();
+        console.log('Database connection established successfully');
+    } catch (error) {
+        console.error('Failed to connect to the database:', error);
+        process.exit(1); // Exit the process with failure
+    }
+};
+
+useDb();
 
 const app = express();
 const port = process.env.PORT;

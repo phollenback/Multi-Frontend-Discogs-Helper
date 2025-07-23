@@ -86,3 +86,12 @@ export const deleteUser : RequestHandler = async (req: Request , res: Response) 
         })
     }
 }
+
+export function authenticateUser(authenticateUser: any) {
+try {
+        // check for username and password in the request body
+    } catch (error) {
+        console.error('[records.controller][readRecords][Error] ', error);
+        // return an error as response
+    }
+}

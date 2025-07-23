@@ -11,6 +11,10 @@ router //
     .route('/api/users')
     .post(UserController.createUser)
 
+router // auth route
+    .route('/api/users/auth')
+    .post(UserController.authenticateUser)  
+
 router //
     .route('/api/users/:username')
     .get(UserController.readUserByUsername)
