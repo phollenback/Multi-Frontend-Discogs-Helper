@@ -22,6 +22,17 @@ export const recordQueries = {
         INSERT INTO records VALUES (?,?,?,?,?,?)
     `,
 
+    upsertRecord:`
+        INSERT INTO records (discogs_id, title, artist, release_year, genre, styles)
+        VALUES (?,?,?,?,?,?)
+        ON DUPLICATE KEY UPDATE
+            title = VALUES(title),
+            artist = VALUES(artist),
+            release_year = VALUES(release_year),
+            genre = VALUES(genre),
+            styles = VALUES(styles);
+    `,
+
     updateRecord:`
         UPDATE records
         SET title = ?,

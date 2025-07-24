@@ -27,4 +27,6 @@ router
     .route('/api/users/:username')
     .delete(UserController.deleteUser)
 
+router.post('/api/users/:userId/wantlist/sync', UserController.syncWantlist);
+
 export default router;

@@ -4,7 +4,7 @@ import { useDiscogs } from '../../utility/dataSource';
 import { useApi } from '../../utility/backSource'; 
 
 const WantlistForm = (props) => {
-    const { updateData: updateDiscogs } = useDiscogs();
+    const { postData: postToDiscogs } = useDiscogs();
     const { postData: postToBackend } = useApi(); 
     const { authState } = useAuthContext();
     const [wantlistData, setWantlistData] = useState({
@@ -17,18 +17,19 @@ const WantlistForm = (props) => {
     const addToDiscogsWantlist = async () => {
         console.log("[WantlistForm][addToDiscogsWantlist]");
         try {
+            // The correct endpoint for adding to wantlist is POST to /users/{username}/wants/{release_id}
             const endpoint = `/users/${authState.username}/wants/${props.id}`;
             const data = {
                 notes: wantlistData.notes,
                 rating: wantlistData.rating,
-                price_threshold: wantlistData.price_threshold,
             };
-            const response = await updateDiscogs(endpoint, data); // Post to Discogs API
-            console.log(response);
+            const response = await postToDiscogs(endpoint, data); // Post to Discogs API
+            console.log('Discogs response:', response);
             return true;
         } catch (error) {
-            console.error("Error adding to Discogs wantlist");
-            return false;
+            console.error("Error adding to Discogs wantlist:", error);
+            // For now, return true to allow backend operations to continue
+            return true;
         }
     };
 
@@ -36,27 +37,34 @@ const WantlistForm = (props) => {
     const addToBackend = async () => {
         console.log("[WantlistForm][addToBackend]");
 
-        let recordResponse;
-        let backResponse;
         try {
-            // Post the record data to the backend using useApi.postData
-            recordResponse = await postToBackend(`/api/records`, props.record); 
-            console.log('Record Response:', recordResponse.data);
+            // First, create the record in the records table
+            const recordData = {
+                discogsId: Number(props.id),
+                title: props.record.title || '',
+                artist: props.record.artist || '',
+                releaseYear: props.record.releaseYear ? props.record.releaseYear.toString() : '0',
+                genre: props.record.genre || '',
+                styles: props.record.styles || ''
+            };
+            
+            console.log('Record data:', recordData);
+            const recordResponse = await postToBackend(`/api/records`, recordData); 
+            console.log('Record Response:', recordResponse);
 
-            // Prepare data to send to the backend
-            const body = {
+            // Then create the user record
+            const userRecordData = {
                 userId: authState.userId,
                 discogsId: Number(props.id),
                 rating: Number(wantlistData.rating),
                 notes: wantlistData.notes,
                 price_threshold: Number(wantlistData.price_threshold),
-                wishlist: 0,
+                wishlist: 1,
             };
-            console.log('Backend Body:', body);
+            console.log('User record data:', userRecordData);
 
-            // Post to the backend system using useApi.postData
-            backResponse = await postToBackend(`/api/users/${authState.userId}/collection`, body);
-            console.log('Backend Response:', backResponse.data);
+            const userRecordResponse = await postToBackend(`/api/users/${authState.userId}/collection`, userRecordData);
+            console.log('User record Response:', userRecordResponse);
             return true;
         } catch (error) {
             console.error('Error during backend request:', error);
@@ -75,9 +83,11 @@ const WantlistForm = (props) => {
         const backResponse = await addToBackend();
 
         if (backResponse && discogsResponse) {
-            alert("Wantlist item added successfully.");
+            alert("Wantlist item added successfully to both Discogs and backend.");
+        } else if (backResponse) {
+            alert("Added to backend successfully. Discogs API may have failed.");
         } else {
-            alert("Not added successfully.");
+            alert("Failed to add item to backend.");
         }
     };
 

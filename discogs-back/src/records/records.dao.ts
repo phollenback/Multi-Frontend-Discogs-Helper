@@ -25,6 +25,13 @@ export const createRecord = async (record : Record) => {
             [record.discogsId, record.title, record.artist, record.releaseYear, record.genre, record.styles])
 }
 
+export const upsertRecord = async (record : Record) => {
+    console.log('in upsert record.');
+   
+    return execute<OkPacket>(recordQueries.upsertRecord, 
+            [record.discogsId, record.title, record.artist, record.releaseYear, record.genre, record.styles])
+}
+
 export const updateRecord = async (record : Record) => {
     console.log('in create record.');
    

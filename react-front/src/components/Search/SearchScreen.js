@@ -4,10 +4,16 @@ import SearchForm from './SearchForm';
 import SearchList from './SearchList';
 import axios from 'axios';
 import { getData } from '../../utility/dataSource';
+import { useDiscogs } from '../../utility/dataSource';
+import { useApi } from '../../utility/backSource';
+import { useAuthContext } from '../../AuthContext';
 
 const SearchScreen = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [releases, setReleases] = useState([]);
+    const { putData: putDiscogsData } = useDiscogs();
+    const { updateData } = useApi();
+    const { authState } = useAuthContext();
 
     useEffect(() => {
         if (searchTerm !== "") {
@@ -45,6 +51,22 @@ const SearchScreen = () => {
         };
       
 
+  const handleAddToWantlist = async (release) => {
+        try {
+            // Add to Discogs wantlist
+            await putDiscogsData(`/users/${authState.username}/wants/${release.id}`);
+            // Upsert to backend for custom fields
+            await updateData(`/api/users/${authState.userId}/collection/${release.id}`, {
+                rating: 0,
+                notes: '',
+                price_threshold: ''
+            });
+            alert('Added to wantlist!');
+        } catch (err) {
+            alert('Failed to add to wantlist.');
+        }
+    };
+
   return (
     <div className="search-container d-flex justify-content-center align-items-start">
       <div className="container">
@@ -56,7 +78,7 @@ const SearchScreen = () => {
 
         <div className="row justify-content-center mt-4">
           <div className="col-12 col-md-8">
-            <SearchList releases={releases}/>
+            <SearchList releases={releases} onAddToWantlist={handleAddToWantlist}/>
           </div>
         </div>
       </div>

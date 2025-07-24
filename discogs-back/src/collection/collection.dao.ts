@@ -29,3 +29,9 @@ export const deleteCollectionItem = async (userId : number, discogsId : number) 
     console.log('in delete CI');
     return execute<OkPacket>(collectionQueries.deleteCollectionItem, [userId, discogsId]);
 };
+
+export const upsertCollectionItem = async (item : CollectionItem)  => {
+    console.log('in upsert CI');
+    return execute<OkPacket>(collectionQueries.upsertCollectionItem,
+         [item.userId, item.discogsId, item.rating, item.notes, item.priceThreshold, item.wishlist]);
+};

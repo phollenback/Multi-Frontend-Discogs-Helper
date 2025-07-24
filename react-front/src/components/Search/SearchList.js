@@ -13,6 +13,7 @@ const SearchList = (props) => {
                 year={release.year}
                 genre={release.genre}
                 style={release.style}
+                onAddToWantlist={props.onAddToWantlist}
             />
         );
     });

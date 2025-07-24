@@ -1,5 +1,6 @@
 import { Request, RequestHandler, Response } from 'express'
 import * as CollectionDao from './collection.dao'
+import * as RecordDao from '../records/records.dao'
 import { OkPacket } from 'mysql';
 
 export const readCollection : RequestHandler = async (req: Request , res: Response) => {
@@ -22,9 +23,43 @@ export const readCollection : RequestHandler = async (req: Request , res: Respon
 
 export const createCollectionItem : RequestHandler = async (req: Request , res: Response) => {
     try {
-        const okPacket : OkPacket = await CollectionDao.createCollectionItem(req.body);
+        // First, create the record in the records table if it doesn't exist
+        const recordItem = {
+            discogsId: parseInt(req.body.discogsId),
+            title: req.body.title || '',
+            artist: req.body.artist || '',
+            releaseYear: req.body.releaseYear ? (parseInt(req.body.releaseYear) || 0).toString() : '0',
+            genre: req.body.genre || '',
+            styles: req.body.styles || ''
+        };
+        
+        try {
+            await RecordDao.createRecord(recordItem);
+            console.log('Created record:', recordItem);
+        } catch (error) {
+            // If record already exists, that's fine
+            console.log('Record might already exist:', error);
+        }
+        
+        // Then create the user record
+        const item = {
+            userId: parseInt(req.body.userId),
+            discogsId: parseInt(req.body.discogsId),
+            title: req.body.title || '',
+            artist: req.body.artist || '',
+            genres: req.body.genres || '',
+            released: req.body.released || '',
+            styles: req.body.styles || '',
+            notes: req.body.notes || '',
+            rating: req.body.rating || '0',
+            priceThreshold: req.body.price_threshold || '',
+            wishlist: req.body.wishlist || '0'
+        };
+        
+        const okPacket : OkPacket = await CollectionDao.createCollectionItem(item);
 
         console.log('req.body', req.body);
+        console.log('constructed item', item);
         console.log('record', okPacket);
 
         res.status(200).json(okPacket);
@@ -63,12 +98,23 @@ export const updateCollectionItem : RequestHandler = async (req: Request , res: 
     try {
         let userId = parseInt(req.params.userId as string)
         let discogsId = parseInt(req.params.discogsId as string)
-        // Update the records first
-        const okPacket : OkPacket = await CollectionDao.updateCollectionItem(req.body, userId, discogsId);
-        
+        // Upsert the record
+        const item = {
+            userId,
+            discogsId,
+            title: '',
+            artist: '',
+            genres: '',
+            released: '',
+            styles: '',
+            rating: req.body.rating,
+            notes: req.body.notes,
+            priceThreshold: req.body.price_threshold,
+            wishlist: req.body.wishlist || 0
+        };
+        const okPacket : OkPacket = await CollectionDao.upsertCollectionItem(item);
         console.log('req.body', req.body);
         console.log('records', okPacket);
-
         res.status(200).json(okPacket);
     } catch (error) {
         console.error('[records.controller][updateRecor][Error] ', error);

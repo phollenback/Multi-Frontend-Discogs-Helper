@@ -21,9 +21,19 @@ export const readRecords : RequestHandler = async (req: Request , res: Response)
 
 export const createRecord: RequestHandler = async (req: Request, res: Response) => {
     try {
-        const okPacket : OkPacket = await RecordDao.createRecord(req.body);
+        const recordItem = {
+            discogsId: parseInt(req.body.discogsId),
+            title: req.body.title || '',
+            artist: req.body.artist || '',
+            releaseYear: req.body.releaseYear ? (parseInt(req.body.releaseYear) || 0).toString() : '0',
+            genre: req.body.genre || '',
+            styles: req.body.styles || ''
+        };
+        
+        const okPacket : OkPacket = await RecordDao.upsertRecord(recordItem);
 
         console.log('req.body', req.body);
+        console.log('constructed record', recordItem);
         console.log('record', okPacket);
 
         res.status(200).json(okPacket);

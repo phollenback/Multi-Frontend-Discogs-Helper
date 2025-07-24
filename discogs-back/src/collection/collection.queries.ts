@@ -50,5 +50,15 @@ export const collectionQueries = {
 
     deleteCollectionItem:`
     DELETE FROM user_records WHERE user_id = ? && discogs_id = ?
+    `,
+
+    upsertCollectionItem: `
+    INSERT INTO user_records (user_id, discogs_id, rating, notes, price_threshold, wishlist)
+    VALUES (?,?,?,?,?,?)
+    ON DUPLICATE KEY UPDATE
+      rating = VALUES(rating),
+      notes = VALUES(notes),
+      price_threshold = VALUES(price_threshold),
+      wishlist = VALUES(wishlist);
     `
 }

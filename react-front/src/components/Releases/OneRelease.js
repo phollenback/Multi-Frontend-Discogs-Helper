@@ -5,7 +5,8 @@ import '../../styles/OneRelease.css';
 import InfoPanel from './InfoPanel';
 import Tracks from './Tracks';
 import Stats from './Stats';
-import ManagementForm from './ManagementForm';
+import CollectionForm from './CollectionForm';
+import WantlistForm from './WantlistForm';
 
 const OneRelease = () => {
     const [releaseData, setReleaseData] = useState(null); 
@@ -21,6 +22,7 @@ const OneRelease = () => {
 
     useEffect(() => {
         loadRelease();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); 
 
     const loadRelease = async () => {
@@ -105,7 +107,8 @@ const OneRelease = () => {
             </div>
             <hr />
             <div className='row'>
-                <ManagementForm record={record} id={id}/>
+                <CollectionForm record={record} id={id}/>
+                <WantlistForm record={record} id={id}/>
             </div>
         </div>
     );
