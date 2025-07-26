@@ -5,22 +5,20 @@ export const initializeMySqlConnector = () => {
     try
     {
         pool = createPool({
-            connectionLimit:
-                parseInt(process.env.MY_SQL_DB_CONNECTION_LIMIT != undefined ? process.env.MY_SQL_DB_CONNECTION_LIMIT : ""),
-            port: 
-                parseInt(process.env.MY_SQL_DB_PORT != undefined ? process.env.MY_SQL_DB_PORT : ""),
-            host : process.env.MY_SQL_DB_HOST,
-            user : process.env.MY_SQL_DB_USER,
-            password : process.env.MY_SQL_DB_PASSWORD,
-            database: process.env.MY_SQL_DB_DATABASE,
+            connectionLimit: parseInt(process.env.MY_SQL_DB_CONNECTION_LIMIT || "10"),
+            port: parseInt(process.env.MY_SQL_DB_PORT || "3306"),
+            host: process.env.MY_SQL_DB_HOST || "127.0.0.1",
+            user: process.env.MY_SQL_DB_USER || "root",
+            password: process.env.MY_SQL_DB_PASSWORD || "",
+            database: process.env.MY_SQL_DB_DATABASE || "Discogs",
         });
 
-        console.debug('Mysql Adapter Pool generated successsfully');
+        console.debug('Mysql Adapter Pool generated successfully');
         console.log('process.env.DB_DATABASE', process.env.MY_SQL_DB_DATABASE);
         
         pool.getConnection((err: any, connection: any) => {
             if(err) {
-                console.log('error mysql failed to connect');
+                console.log('error mysql failed to connect:', err);
                 throw new Error('not able to connect to database');
             }
             else {
@@ -30,7 +28,7 @@ export const initializeMySqlConnector = () => {
         })
     } catch (error) {
         console.error('[mysql.connector][initializeMySqlConnector][Error]: ', error);
-        throw new Error('failed to initilize pool'); 
+        throw new Error('failed to initialize pool'); 
     }
 }
 
@@ -43,10 +41,8 @@ export const execute = <T>(query: string, params: string[] | Object) : Promise<T
         return new Promise<T>((resolve, reject) => {
             pool!.query(query, params, (error: any, results: any) => {
                 if(error){
-                    
                     reject(error);
                 } else {
-                    
                     resolve(results);
                 }
             });
@@ -69,7 +65,6 @@ export const checkDbConnection = (): Promise<boolean> => {
                 reject(false);
             } else {            
                 console.log('DB connection successful');
-
                 connection.release();
                 resolve(true);
             }
