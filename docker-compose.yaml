@@ -1,0 +1,60 @@
+name: discogs-helper
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: discogs-mysql
+    command: ["mysqld", "--default-authentication-plugin=mysql_native_password"]
+    env_file:
+      - ./env/.env.db
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    ports:
+      - "3306:3306"   # optional: expose for local DB tools
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./discogs-back
+      dockerfile: Dockerfile
+      # If your backend needs build-time vars, add:
+      # args:
+      #   - NODE_ENV=production
+    container_name: discogs-api
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./discogs-back/.env
+    environment:
+      # Provide a sane default host for DB (overridable by .env)
+      - MY_SQL_DB_HOST=db
+      - MY_SQL_DB_PORT=3306
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./react-front
+      dockerfile: Dockerfile
+      # If you need a build-time API URL for CRA/Vite:
+      # args:
+      #   - REACT_APP_API_URL=http://localhost:3001
+      #   - VITE_API_BASE_URL=http://localhost:3001
+    container_name: discogs-web
+    depends_on:
+      - api
+    env_file:
+      - ./react-front/.env
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

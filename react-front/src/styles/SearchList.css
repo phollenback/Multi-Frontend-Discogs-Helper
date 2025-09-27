@@ -1,0 +1,139 @@
+/* Search List Styles */
+.search-result-item {
+    position: relative;
+}
+
+.search-card {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.search-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    border-color: #007bff !important;
+}
+
+.search-card:hover .hover-popup {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.search-card img:hover {
+    transform: scale(1.05);
+}
+
+.hover-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 15px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    transform: translateY(-10px);
+    margin-top: 5px;
+}
+
+.popup-content {
+    font-size: 0.9rem;
+}
+
+.popup-content h6 {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.popup-content p {
+    margin-bottom: 8px;
+}
+
+.popup-content strong {
+    color: #495057;
+}
+
+.popup-content small {
+    color: #6c757d;
+}
+
+/* Button hover effects */
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Search form enhancements */
+.search-form .form-control {
+    border-radius: 25px;
+    padding: 12px 20px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.search-form .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.search-form .btn {
+    border-radius: 25px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Empty state styling */
+.text-center i.fa-search {
+    opacity: 0.3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hover-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 400px;
+        z-index: 9999;
+    }
+    
+    .search-card:hover .hover-popup {
+        transform: translate(-50%, -50%);
+    }
+    
+    .search-card {
+        margin-bottom: 20px;
+    }
+}
+
+/* Loading state */
+.search-list.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Animation for new results */
+.search-result-item {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
