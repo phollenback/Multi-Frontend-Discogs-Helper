@@ -10,11 +10,12 @@ declare global {
     }
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
     const token = extractTokenFromHeader(req.headers.authorization);
     
     if (!token) {
-        return res.status(401).json({ message: 'Access token required' });
+        res.status(401).json({ message: 'Access token required' });
+        return;
     }
     
     try {
@@ -22,7 +23,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         req.user = payload;
         next();
     } catch (error) {
-        return res.status(403).json({ message: 'Invalid or expired token' });
+        res.status(403).json({ message: 'Invalid or expired token' });
+        return;
     }
 };
 

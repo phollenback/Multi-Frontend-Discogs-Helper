@@ -6,6 +6,7 @@ import { OkPacket } from 'mysql';
 export const readCollection : RequestHandler = async (req: Request , res: Response) => {
     try {
         let records;
+        // Use URL parameter for user ID (temporarily without auth)
         let userId = parseInt(req.params.userId as string)
 
         records = await CollectionDao.readCollection(userId);

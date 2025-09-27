@@ -28,3 +28,8 @@ export const deleteUser = async (username : string)  => {
     console.log(userQueries.deleteUser)
     return execute<OkPacket>(userQueries.deleteUser, [username]);
 };
+
+export const readWantlist = async (userId: number) => {
+    console.log('in readWantlist')
+    return execute(userQueries.readWantlist, [userId]);
+};

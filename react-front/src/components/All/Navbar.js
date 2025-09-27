@@ -18,6 +18,11 @@ const Navbar = () => {
             </li>
             <li className="nav-item">
                 <Link to='/wantlist' className="nav-link">Wantlist</Link>
+            </li>
+            <li className="nav-item">
+                <Link to='/rating' className="nav-link">
+                    <i className="fas fa-star me-1"></i>Rate Items
+                </Link>
             </li>   
             </ul>
         </div>

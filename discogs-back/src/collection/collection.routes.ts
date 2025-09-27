@@ -1,7 +1,9 @@
 import { Request, Response, Router } from 'express'
 import * as CollectionsController from './collection.controller'
+// import { authenticateToken } from '../middleware/auth'
 
 const router = Router();
+
 router  //
     .route('/api/users/:userId/collection')
     .get(CollectionsController.readCollection)

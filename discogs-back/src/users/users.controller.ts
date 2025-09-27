@@ -2,6 +2,7 @@ import { Request, RequestHandler, Response } from 'express'
 import { OkPacket } from 'mysql';
 import * as UserDao from './users.dao'
 import { execute } from '../services/mysql.connector';
+import { generateToken } from '../utils/jwt';
 
 export const readUsers : RequestHandler = async (req: Request , res: Response) => {
     try {
@@ -110,22 +111,38 @@ export const authenticateUser: RequestHandler = async (req, res) => {
             res.status(401).json({ message: 'Invalid credentials.' });
             return;
         }
-        // Return user info (omit password)
+        // Return user info (temporarily without JWT)
         res.status(200).json({
             message: 'Login successful',
             user: {
-                userId: user.user_id, // match frontend expectation
+                userId: user.user_id,
                 username: user.username,
                 email: user.email
             },
-            token: '' // placeholder, implement JWT if needed
+            token: 'temp-token'
         });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
 };
 
+export const readWantlist: RequestHandler = async (req, res) => {
+    try {
+        // Use URL parameter for user ID (temporarily without auth)
+        const userId = parseInt(req.params.userId, 10);
+        const wantlist = await UserDao.readWantlist(userId);
+        
+        res.status(200).json(wantlist);
+    } catch (error) {
+        console.error('[users.controller][readWantlist][Error] ', error);
+        res.status(500).json({
+            message: 'There was an error when fetching wantlist'
+        });
+    }
+};
+
 export const syncWantlist: RequestHandler = async (req, res) => {
+    // Use URL parameter for user ID (temporarily without auth)
     const userId = parseInt(req.params.userId, 10);
     const wantlist = req.body; // Array of wantlist items
     try {

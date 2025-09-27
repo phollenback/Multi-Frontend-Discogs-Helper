@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express'
 import * as UserController from './users.controller'
+// import { authenticateToken } from '../middleware/auth'
 
 const router = Router();
 
@@ -26,6 +27,8 @@ router //
 router
     .route('/api/users/:username')
     .delete(UserController.deleteUser)
+
+router.get('/api/users/:userId/wantlist', UserController.readWantlist);
 
 router.post('/api/users/:userId/wantlist/sync', UserController.syncWantlist);
 

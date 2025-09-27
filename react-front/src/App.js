@@ -13,6 +13,7 @@ import CollectionScreen from './components/UserInfo/CollectionScreen';
 import WantlistScreen from './components/UserInfo/WantlistScreen';
 import Navbar from './components/All/Navbar';
 import EditItem from './components/UserInfo/EditItem';
+import RatingScreen from './components/Rating/RatingScreen';
 
 function App() {
   return (
@@ -35,6 +36,11 @@ function App() {
           }/>
           <Route path='/wantlist' element={
               <WantlistScreen/>
+          }/>
+          <Route path='/rating' element={
+            <PrivateRoute>
+              <RatingScreen/>
+            </PrivateRoute>
           }/>
           <Route path='/edit/:discogsId' element={
             <PrivateRoute>
