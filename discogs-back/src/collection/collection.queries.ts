@@ -3,52 +3,52 @@ import { deleteCollectionItem, updateCollectionItem } from "./collection.dao";
 export const collectionQueries = {
     readCollection: `
     SELECT
-        ur.user_id,
-        r.discogs_id,
-        r.title,
-        r.artist,
-        r.release_year,
-        r.genre,
-        r.styles,
-        r.thumb_url,
-        r.cover_image_url,
-        ur.notes,
-        ur.price_threshold,
-        ur.rating,
-        ur.wishlist
-    FROM user_records ur
-    JOIN records r ON ur.discogs_id = r.discogs_id
-    WHERE ur.user_id = ?
+        user_records.user_id,
+        records.discogs_id,
+        records.title,
+        records.artist,
+        records.release_year,
+        records.genre,
+        records.styles,
+        records.thumb_url,
+        records.cover_image_url,
+        user_records.notes,
+        user_records.price_threshold,
+        user_records.rating,
+        user_records.ranking,
+        user_records.wishlist
+    FROM user_records
+    JOIN records ON user_records.discogs_id = records.discogs_id
+    WHERE user_records.user_id = ? AND user_records.wishlist = 0
     `,
 
     readCollectionItem:`
     SELECT
-        ur.user_id,
-        r.discogs_id,
-        r.title,
-        r.artist,
-        r.release_year,
-        r.genre,
-        r.styles,
-        r.thumb_url,
-        r.cover_image_url,
-        ur.notes,
-        ur.price_threshold,
-        ur.rating,
-        ur.wishlist
-    FROM user_records ur
-    JOIN records r ON ur.discogs_id = r.discogs_id
-    WHERE ur.user_id = ? && ur.discogs_id = ?
+        user_records.user_id,
+        records.discogs_id,
+        records.title,
+        records.artist,
+        records.release_year,
+        records.genre,
+        records.styles,
+        user_records.notes,
+        user_records.price_threshold,
+        user_records.rating,
+        user_records.ranking,
+        user_records.wishlist
+    FROM user_records
+    JOIN records ON user_records.discogs_id = records.discogs_id
+    WHERE user_records.user_id = ? && records.discogs_id = ?
     `,
 
     createCollectionItem:`
-    INSERT INTO user_records (user_id, discogs_id, rating, notes, price_threshold, wishlist)
-    VALUES (?,?,?,?,?,?) 
+    INSERT INTO user_records (user_id, discogs_id, rating, ranking, notes, price_threshold, wishlist)
+    VALUES (?,?,?,?,?,?,?) 
     `,
 
     updateCollectionItem:`
     UPDATE user_records
-    SET rating = ?, notes = ?, price_threshold = ?, wishlist = ?
+    SET rating = ?, ranking = ?, notes = ?, price_threshold = ?, wishlist = ?
     WHERE user_id = ? && discogs_id = ?;
     `,
 
@@ -57,12 +57,34 @@ export const collectionQueries = {
     `,
 
     upsertCollectionItem: `
-    INSERT INTO user_records (user_id, discogs_id, rating, notes, price_threshold, wishlist)
-    VALUES (?,?,?,?,?,?)
+    INSERT INTO user_records (user_id, discogs_id, rating, ranking, notes, price_threshold, wishlist)
+    VALUES (?,?,?,?,?,?,?)
     ON DUPLICATE KEY UPDATE
       rating = VALUES(rating),
+      ranking = VALUES(ranking),
       notes = VALUES(notes),
       price_threshold = VALUES(price_threshold),
       wishlist = VALUES(wishlist);
+    `,
+
+    readWantlist: `
+    SELECT
+        user_records.user_id,
+        records.discogs_id,
+        records.title,
+        records.artist,
+        records.release_year,
+        records.genre,
+        records.styles,
+        records.thumb_url,
+        records.cover_image_url,
+        user_records.notes,
+        user_records.price_threshold,
+        user_records.rating,
+        user_records.ranking,
+        user_records.wishlist
+    FROM user_records
+    JOIN records ON user_records.discogs_id = records.discogs_id
+    WHERE user_records.user_id = ? AND user_records.wishlist = 1
     `
 }

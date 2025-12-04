@@ -4,8 +4,6 @@ import { Navigate } from 'react-router-dom';
 // Import the custom hook to access the authentication context
 import { useAuthContext } from './AuthContext';
 
-// TODO 5 Define the PrivateRoute component
-
 // { children }: Is a special prop in React that represents the nested components 
 // or renderable elements passed to the PrivateRoute component. 
 // It allows PrivateRoute to render whatever components are wrapped inside it.
@@ -20,7 +18,7 @@ const PrivateRoute = ({ children }) => {
 
   // If the user is authenticated, render the children components
   // Otherwise, navigate to the login page
-  return isAuthenticated ? children : <Navigate to="/" />;
+  return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 // Export the PrivateRoute component as the default export

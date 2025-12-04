@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import App from './App';
+import VinylSpinner from './components/All/VinylSpinner';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+describe('VinylSpinner', () => {
+  test('renders provided label text', () => {
+    render(<VinylSpinner label="Loading grooves" />);
+    expect(screen.getByText(/Loading grooves/i)).toBeInTheDocument();
+  });
 });

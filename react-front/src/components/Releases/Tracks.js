@@ -1,30 +1,26 @@
-import React from 'react'
+import React from 'react';
 
 const Tracks = ({ tracklist }) => {
-    const tracklisting = tracklist.map((track) => {
+    if (!Array.isArray(tracklist) || tracklist.length === 0) {
         return (
-            <li className="list-group-item">
-                <div className='row'>
-                    <div className='col-2'>
-                        <h6>{track.position}</h6>
-                    </div>
-                    <div className='col-10'>
-                        <h5>{track.title}</h5>
-                    </div>
-                </div>
-                
-
-            </li>
-
+            <div className="release-tracklist__empty">
+                <i className="fas fa-music me-2"></i>
+                No tracklist available for this release.
+            </div>
         );
-    });
-  return (
-    <>
-        <ul className="list-group list-group-flush">
-            {tracklisting}
-        </ul>
-    </>
-  )
-}
+    }
 
-export default Tracks
+    return (
+        <ul className="release-tracklist__list">
+            {tracklist.map((track, index) => (
+                <li key={`${track.position || index}-${track.title}`} className="release-tracklist__item">
+                    <span className="release-tracklist__position">{track.position || index + 1}</span>
+                    <span className="release-tracklist__title">{track.title}</span>
+                    {track.duration && <span className="release-tracklist__duration">{track.duration}</span>}
+                </li>
+            ))}
+        </ul>
+    );
+};
+
+export default Tracks;

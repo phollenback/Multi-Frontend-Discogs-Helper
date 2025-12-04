@@ -14,53 +14,26 @@
     border-color: #007bff !important;
 }
 
-.search-card:hover .hover-popup {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
 .search-card img:hover {
     transform: scale(1.05);
 }
 
-.hover-popup {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 15px;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    transform: translateY(-10px);
-    margin-top: 5px;
+/* Compact card styles */
+.search-card-compact {
+    position: relative;
+    transition: all 0.2s ease;
 }
 
-.popup-content {
-    font-size: 0.9rem;
+.search-card-compact:hover {
+    border-color: #007bff !important;
 }
 
-.popup-content h6 {
-    color: #007bff;
-    font-weight: 600;
+.search-card-compact .card-img-top {
+    transition: transform 0.2s ease;
 }
 
-.popup-content p {
-    margin-bottom: 8px;
-}
-
-.popup-content strong {
-    color: #495057;
-}
-
-.popup-content small {
-    color: #6c757d;
+.search-card-compact:hover .card-img-top {
+    transform: scale(1.03);
 }
 
 /* Button hover effects */
@@ -96,22 +69,20 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .hover-popup {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 90%;
-        max-width: 400px;
-        z-index: 9999;
-    }
-    
-    .search-card:hover .hover-popup {
-        transform: translate(-50%, -50%);
-    }
-    
     .search-card {
-        margin-bottom: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .search-card-compact .card-body {
+        padding: 0.5rem !important;
+    }
+}
+
+/* Extra small devices - show 2 cards per row */
+@media (max-width: 576px) {
+    .col-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
     }
 }
 
@@ -136,4 +107,6 @@
         transform: translateY(0);
     }
 }
+
+
 

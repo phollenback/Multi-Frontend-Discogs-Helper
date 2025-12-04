@@ -5,10 +5,8 @@ export const initializeMySqlConnector = () => {
     try
     {
         pool = createPool({
-            connectionLimit:
-                parseInt(process.env.MY_SQL_DB_CONNECTION_LIMIT != undefined ? process.env.MY_SQL_DB_CONNECTION_LIMIT : ""),
-            port: 
-                parseInt(process.env.MY_SQL_DB_PORT != undefined ? process.env.MY_SQL_DB_PORT : ""),
+            connectionLimit: process.env.MY_SQL_DB_CONNECTION_LIMIT ? parseInt(process.env.MY_SQL_DB_CONNECTION_LIMIT) : 10,
+            port: process.env.MY_SQL_DB_PORT ? parseInt(process.env.MY_SQL_DB_PORT) : 3306,
             host : process.env.MY_SQL_DB_HOST,
             user : process.env.MY_SQL_DB_USER,
             password : process.env.MY_SQL_DB_PASSWORD,
@@ -16,7 +14,13 @@ export const initializeMySqlConnector = () => {
         });
 
         console.debug('Mysql Adapter Pool generated successsfully');
-        console.log('process.env.DB_DATABASE', process.env.MY_SQL_DB_DATABASE);
+        console.log('MY_SQL_DB_DATABASE:', process.env.MY_SQL_DB_DATABASE);
+        console.log('MY_SQL_DB_USER:', process.env.MY_SQL_DB_USER);
+        console.log('MY_SQL_DB_PASSWORD:', process.env.MY_SQL_DB_PASSWORD);
+        console.log('MY_SQL_DB_HOST:', process.env.MY_SQL_DB_HOST);
+        console.log('MY_SQL_DB_PORT:', process.env.MY_SQL_DB_PORT);
+        console.log('MY_SQL_DB_CONNECTION_LIMIT:', process.env.MY_SQL_DB_CONNECTION_LIMIT);
+
         
         pool.getConnection((err: any, connection: any) => {
             if(err) {
@@ -74,5 +78,25 @@ export const checkDbConnection = (): Promise<boolean> => {
                 resolve(true);
             }
         });
+    });
+}
+
+// Function to close the pool (useful for tests)
+export const closePool = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if (pool) {
+            pool.end((err) => {
+                if (err) {
+                    console.error('[mysql.connector][closePool][Error]: ', err);
+                    reject(err);
+                } else {
+                    console.log('[mysql.connector][closePool] Pool closed successfully');
+                    pool = null;
+                    resolve();
+                }
+            });
+        } else {
+            resolve();
+        }
     });
 }

@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { useAuthContext } from '../../AuthContext';
-import { useDiscogs } from '../../utility/dataSource'; 
 import { useApi } from '../../utility/backSource'; 
 
 const WantlistForm = (props) => {
-    const { postData: postToDiscogs } = useDiscogs();
-    const { postData: postToBackend } = useApi(); 
+    const { putData: putToBackend, postData: postToBackend } = useApi(); 
     const { authState } = useAuthContext();
     const [wantlistData, setWantlistData] = useState({
         notes: '',
@@ -13,17 +11,17 @@ const WantlistForm = (props) => {
         price_threshold: 0,
     });
 
-    // Add item to the Discogs wantlist
+    // Add item to the Discogs wantlist via OAuth proxy
     const addToDiscogsWantlist = async () => {
         console.log("[WantlistForm][addToDiscogsWantlist]");
         try {
-            // The correct endpoint for adding to wantlist is POST to /users/{username}/wants/{release_id}
-            const endpoint = `/users/${authState.username}/wants/${props.id}`;
+            // Use OAuth-protected proxy endpoint via backend
+            const endpoint = `/api/users/${authState.userId}/discogs/proxy/wants/${props.id}`;
             const data = {
                 notes: wantlistData.notes,
                 rating: wantlistData.rating,
             };
-            const response = await postToDiscogs(endpoint, data); // Post to Discogs API
+            const response = await putToBackend(endpoint, data); // PUT to backend proxy
             console.log('Discogs response:', response);
             return true;
         } catch (error) {
@@ -45,7 +43,9 @@ const WantlistForm = (props) => {
                 artist: props.record.artist || '',
                 releaseYear: props.record.releaseYear ? props.record.releaseYear.toString() : '0',
                 genre: props.record.genre || '',
-                styles: props.record.styles || ''
+                styles: props.record.styles || '',
+                thumbUrl: props.record.thumbUrl || '',
+                coverImageUrl: props.record.coverImageUrl || ''
             };
             
             console.log('Record data:', recordData);

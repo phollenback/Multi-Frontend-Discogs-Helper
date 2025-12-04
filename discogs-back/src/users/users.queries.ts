@@ -2,20 +2,32 @@
 export const userQueries = {
     readUsers: `
      SELECT
-        *
-    FROM Discogs.users
+        users.user_id,
+        users.username,
+        users.email,
+        users.password,
+        users.is_admin,
+        users.discogs_token,
+        users.discogs_token_secret,
+        users.user_image
+    FROM users
     `,
 
     createUser:`
-    INSERT INTO users (username, email, password)
-    VALUES (?,?,?)
+    INSERT INTO users (username, email, password, user_image)
+    VALUES (?,?,?,?)
     `,
 
     readUserByUsername:`
     SELECT
+        users.user_id,
         users.username,
         users.password,
-        users.email
+        users.email,
+        users.is_admin,
+        users.discogs_token,
+        users.discogs_token_secret,
+        users.user_image
     FROM users
     WHERE users.username = ?
     `,
@@ -28,25 +40,5 @@ export const userQueries = {
 
     deleteUser:`
     DELETE FROM Discogs.users WHERE username = ?
-    `,
-
-    readWantlist:`
-    SELECT 
-        ur.user_id,
-        ur.discogs_id,
-        ur.notes,
-        ur.price_threshold,
-        ur.rating,
-        ur.wishlist,
-        r.title,
-        r.artist,
-        r.release_year,
-        r.genre,
-        r.styles,
-        r.thumb_url,
-        r.cover_image_url
-    FROM user_records ur
-    JOIN records r ON ur.discogs_id = r.discogs_id
-    WHERE ur.user_id = ? AND ur.wishlist = 1
     `
 }

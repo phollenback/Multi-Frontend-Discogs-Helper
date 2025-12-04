@@ -4,9 +4,12 @@
   "main": "app.ts",
   "scripts": {
     "start:watch": "nodemon ./src/app.ts",
-    "start": "npx ts-node ./src/app.ts",
+    "start": "npx ts-node --transpile-only ./src/app.ts",
     "dev": "nodemon --watch src --exec npx ts-node ./src/app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --testPathPattern=unit",
+    "test:watch": "jest --watch --testPathPattern=unit",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration"
   },
   "author": "",
   "license": "ISC",
@@ -28,10 +31,13 @@
     "@types/cors": "^2.8.17",
     "@types/dotenv": "^8.2.0",
     "@types/express": "^5.0.0",
-    "@types/jsonwebtoken": "^9.0.5",
+    "@types/jest": "^29.5.12",
+    "@types/jsonwebtoken": "^9.0.6",
     "@types/mysql": "^2.15.26",
     "@types/uuid": "^10.0.0",
-    "typescript": "^5.6.3",
-    "nodemon": "^3.0.0"
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.3"
   }
 }

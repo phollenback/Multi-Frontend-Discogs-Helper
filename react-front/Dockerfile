@@ -9,6 +9,10 @@
     # Copy source
     COPY . .
     
+    # Accept build-time API URL for production
+    ARG REACT_APP_API_URL=http://localhost:3001
+    ENV REACT_APP_API_URL=$REACT_APP_API_URL
+    
     # Build the static site:
     # If Create React App: npm run build (outputs to /app/build)
     # If Vite: npm run build (outputs to /app/dist)
@@ -25,6 +29,6 @@
     # If Vite:
     # COPY --from=build /app/dist /usr/share/nginx/html
     
-    EXPOSE 80
+    EXPOSE 80 443
     CMD ["nginx", "-g", "daemon off;"]
     

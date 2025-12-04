@@ -10,21 +10,27 @@ declare global {
     }
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
+export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+    console.log(`[auth][authenticateToken] Checking authentication for ${req.method} ${req.path}`);
+    console.log(`[auth][authenticateToken] Authorization header:`, req.headers.authorization ? req.headers.authorization.substring(0, 30) + '...' : 'none');
+    
     const token = extractTokenFromHeader(req.headers.authorization);
     
     if (!token) {
-        res.status(401).json({ message: 'Access token required' });
-        return;
+        console.log(`[auth][authenticateToken] ❌ No token found in Authorization header`);
+        return res.status(401).json({ message: 'Access token required' });
     }
+    
+    console.log(`[auth][authenticateToken] Token extracted: ${token.substring(0, 20)}...`);
     
     try {
         const payload = verifyToken(token);
         req.user = payload;
+        console.log(`[auth][authenticateToken] ✅ Token verified for user: ${payload.username} (${payload.userId})`);
         next();
     } catch (error) {
-        res.status(403).json({ message: 'Invalid or expired token' });
-        return;
+        console.log(`[auth][authenticateToken] ❌ Token verification failed:`, error);
+        return res.status(403).json({ message: 'Invalid or expired token' });
     }
 };
 

@@ -3,4 +3,8 @@ export interface User {
     username : string;
     email : string;
     password : string;
+    is_admin?: boolean;
+    discogs_token?: string;
+    discogs_token_secret?: string;
+    user_image?: string;
 }

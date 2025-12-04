@@ -5,15 +5,18 @@ services:
     image: mysql:8.0
     container_name: discogs-mysql
     command: ["mysqld", "--default-authentication-plugin=mysql_native_password"]
-    env_file:
-      - ./env/.env.db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password_123
+      - MYSQL_DATABASE=Discogs
+      - MYSQL_USER=discogs_user
+      - MYSQL_PASSWORD=secure_password_123
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     ports:
-      - "3306:3306"   # optional: expose for local DB tools
+      - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpassword123"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_password_123"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -22,39 +25,62 @@ services:
     build:
       context: ./discogs-back
       dockerfile: Dockerfile
-      # If your backend needs build-time vars, add:
-      # args:
-      #   - NODE_ENV=production
+      args:
+        - SKIP_TESTS=false
+      target: runtime
     container_name: discogs-api
     depends_on:
       db:
         condition: service_healthy
-    env_file:
-      - ./discogs-back/.env
+    dns:
+      - 127.0.0.11  # Docker's internal DNS resolver (uses host's DNS)
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
-      # Provide a sane default host for DB (overridable by .env)
+      # Database Configuration
       - MY_SQL_DB_HOST=db
       - MY_SQL_DB_PORT=3306
+      - MY_SQL_DB_USER=discogs_user
+      - MY_SQL_DB_PASSWORD=secure_password_123
+      - MY_SQL_DB_DATABASE=Discogs
+      - MY_SQL_DB_CONNECTION_LIMIT=10
+      # Server Configuration
+      - PORT=3001
+      - NODE_ENV=production
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      # Discogs API Configuration
+      - DISCOGS_TOKEN=${DISCOGS_TOKEN}
+      - DISCOGS_CONSUMER_KEY=${DISCOGS_CONSUMER_KEY}
+      - DISCOGS_CONSUMER_SECRET=${DISCOGS_CONSUMER_SECRET}
+      - DISCOGS_OAUTH_CALLBACK_URL=${DISCOGS_OAUTH_CALLBACK_URL:-http://localhost:3001/api/users/discogs/oauth/callback}
+      # CORS Configuration (for local development)
+      - CORS_ORIGIN=http://localhost:80,http://localhost:8080,http://127.0.0.1:8080,http://localhost:3000,http://localhost:3001
+      # Logging
+      - LOG_LEVEL=info
     ports:
       - "3001:3001"
     restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   web:
     build:
       context: ./react-front
       dockerfile: Dockerfile
-      # If you need a build-time API URL for CRA/Vite:
-      # args:
-      #   - REACT_APP_API_URL=http://localhost:3001
-      #   - VITE_API_BASE_URL=http://localhost:3001
+      args:
+        - REACT_APP_API_URL=http://localhost:3001
     container_name: discogs-web
     depends_on:
       - api
-    env_file:
-      - ./react-front/.env
     ports:
       - "8080:80"
+      # SSL certificates not needed for local development
+      # - "443:443"
     restart: unless-stopped
 
 volumes:
   mysql_data:
+
+

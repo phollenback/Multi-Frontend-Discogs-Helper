@@ -2,6 +2,23 @@ import { Request, RequestHandler, Response } from 'express'
 import * as RecordDao from './records.dao'
 import { OkPacket } from 'mysql';
 
+// Helper function to check if user can access the requested resource
+const checkUserAccess = (req: Request): boolean => {
+    const requestedUserId = parseInt(req.params.userId as string);
+    const authenticatedUserId = req.user?.userId;
+    
+    // Admins can access any user's data
+    if (req.user?.isAdmin) {
+        return true;
+    }
+    
+    if (!authenticatedUserId || requestedUserId !== authenticatedUserId) {
+        return false;
+    }
+    
+    return true;
+};
+
 export const readRecords : RequestHandler = async (req: Request , res: Response) => {
     try {
         let records;
@@ -27,7 +44,9 @@ export const createRecord: RequestHandler = async (req: Request, res: Response) 
             artist: req.body.artist || '',
             releaseYear: req.body.releaseYear ? (parseInt(req.body.releaseYear) || 0).toString() : '0',
             genre: req.body.genre || '',
-            styles: req.body.styles || ''
+            styles: req.body.styles || '',
+            thumbUrl: req.body.thumbUrl || req.body.thumb || '',
+            coverImageUrl: req.body.coverImageUrl || req.body.cover_image || ''
         };
         
         const okPacket : OkPacket = await RecordDao.upsertRecord(recordItem);
@@ -48,6 +67,13 @@ export const createRecord: RequestHandler = async (req: Request, res: Response) 
 export const readRecordsByUser : RequestHandler = async (req: Request , res: Response) => {
         try 
         {
+            // Check authorization
+            if (!checkUserAccess(req)) {
+                return res.status(403).json({
+                    message: 'Access forbidden: You can only access your own data'
+                });
+            }
+
             let records;
             let userId = parseInt(req.params.userId as string)
     
@@ -85,6 +111,13 @@ export const updateRecord : RequestHandler = async (req: Request , res: Response
 
 export const deleteRecord : RequestHandler = async (req: Request , res: Response) => {
     try {
+        // Check authorization
+        if (!checkUserAccess(req)) {
+            return res.status(403).json({
+                message: 'Access forbidden: You can only access your own data'
+            });
+        }
+
         let userId = parseInt(req.params.userId as string)
         let discogsId = parseInt(req.params.discogsId as string)
 

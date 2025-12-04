@@ -3,7 +3,9 @@ import axios from "axios";
 
 // Create the Axios instance with base URL for Discogs API
 const api = axios.create({
-    baseURL: 'https://api.discogs.com'
+    baseURL: 'https://api.discogs.com',
+    timeout: 15000, // 15 second timeout for Discogs API (may be slower)
+    timeoutErrorMessage: 'Discogs API request timed out after 15 seconds'
 });
 
 // Rate limiting variables
@@ -64,11 +66,37 @@ export const useDiscogs = () => {
         setError(null);
         let retryCount = 0;
         
+        console.log(`[Discogs API] Making GET request to: ${endpoint}`);
+        
         while (retryCount < 3) {
             try {
                 const response = await api.get(endpoint);
+                console.log(`[Discogs API] Response received:`, {
+                    status: response.status,
+                    dataKeys: Object.keys(response.data || {}),
+                    dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
+                    endpoint: endpoint
+                });
+                
+                if (response.data && typeof response.data === 'object') {
+                    console.log(`[Discogs API] Response data preview:`, {
+                        pagination: response.data.pagination,
+                        wants: response.data.wants ? `Array with ${response.data.wants.length} items` : 'no wants',
+                        results: response.data.results ? `Array with ${response.data.results.length} items` : 'no results'
+                    });
+                }
+                
+                setLoading(false);
                 return response.data;
             } catch (err) {
+                console.error(`[Discogs API] Error on attempt ${retryCount + 1}:`, {
+                    status: err.response?.status,
+                    statusText: err.response?.statusText,
+                    message: err.message,
+                    endpoint: endpoint,
+                    responseData: err.response?.data
+                });
+                
                 const shouldRetry = await handleRateLimitError(err, retryCount);
                 if (shouldRetry) {
                     retryCount++;
@@ -76,6 +104,7 @@ export const useDiscogs = () => {
                 }
                 setError(err);
                 console.error("Error fetching data:", err);
+                setLoading(false);
                 throw err;
             }
         }

@@ -12,11 +12,9 @@ const RatingScreen = () => {
     const [sortBy, setSortBy] = useState('title'); // 'title', 'artist', 'rating', 'date_added'
     const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
     const [activeTab, setActiveTab] = useState('collection'); // 'collection', 'wantlist'
-    const [syncing, setSyncing] = useState(false);
-    const [syncMessage, setSyncMessage] = useState('');
     
     const { authState } = useAuthContext();
-    const { getData, updateData, postData } = useApi();
+    const { getData, updateData } = useApi();
 
     useEffect(() => {
         loadData();
@@ -25,16 +23,76 @@ const RatingScreen = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            // Load both collection and wantlist
-            const [collectionData, wantlistData] = await Promise.all([
-                getData(`/api/users/${authState.userId}/collection`),
-                getData(`/api/users/${authState.userId}/wantlist`)
+            
+            if (!authState.username || !authState.userId) {
+                setError('Please log in to view your collection');
+                setLoading(false);
+                return;
+            }
+            
+            // Fetch from Discogs API via OAuth proxy (real-time data)
+            const [discogsCollection, discogsWantlist] = await Promise.all([
+                getData(`/api/users/${authState.userId}/discogs/proxy/collection/folders/1/releases?username=${authState.username}`),
+                getData(`/api/users/${authState.userId}/discogs/proxy/wants?username=${authState.username}`)
             ]);
-            setCollection(collectionData);
-            setWantlist(wantlistData);
+            
+            // Fetch user ratings/rankings from database
+            const [dbCollection, dbWantlist] = await Promise.all([
+                getData(`/api/users/${authState.userId}/collection`).catch(() => []),
+                getData(`/api/users/${authState.userId}/wantlist`).catch(() => [])
+            ]);
+            
+            // Map and merge collection data
+            const mappedCollection = discogsCollection.releases?.map(release => {
+                const info = release.basic_information;
+                const dbItem = dbCollection.find(item => item.discogs_id === info.id);
+                
+                return {
+                    discogs_id: info.id,
+                    title: info.title,
+                    artist: info.artists?.map(a => a.name).join(', ') || '',
+                    release_year: info.year,
+                    genre: info.genres?.join(', ') || '',
+                    styles: info.styles?.join(', ') || '',
+                    thumb_url: info.thumb,
+                    cover_image_url: info.cover_image,
+                    rating: dbItem?.rating || null,
+                    ranking: dbItem?.ranking || null,
+                    notes: dbItem?.notes || '',
+                    price_threshold: dbItem?.price_threshold || 0,
+                    wishlist: 0,
+                    created_at: release.date_added
+                };
+            }) || [];
+            
+            // Map and merge wantlist data
+            const mappedWantlist = discogsWantlist.wants?.map(want => {
+                const info = want.basic_information;
+                const dbItem = dbWantlist.find(item => item.discogs_id === info.id);
+                
+                return {
+                    discogs_id: info.id,
+                    title: info.title,
+                    artist: info.artists?.map(a => a.name).join(', ') || '',
+                    release_year: info.year,
+                    genre: info.genres?.join(', ') || '',
+                    styles: info.styles?.join(', ') || '',
+                    thumb_url: info.thumb,
+                    cover_image_url: info.cover_image,
+                    rating: dbItem?.rating || want.rating || null,
+                    ranking: dbItem?.ranking || null,
+                    notes: dbItem?.notes || want.notes || '',
+                    price_threshold: dbItem?.price_threshold || 0,
+                    wishlist: 1,
+                    created_at: want.date_added
+                };
+            }) || [];
+            
+            setCollection(mappedCollection);
+            setWantlist(mappedWantlist);
         } catch (err) {
             console.error('Error loading data:', err);
-            setError('Failed to load data');
+            setError('Failed to load data from Discogs');
         } finally {
             setLoading(false);
         }
@@ -49,9 +107,18 @@ const RatingScreen = () => {
             // Update in backend
             await updateData(`/api/users/${authState.userId}/collection/${discogsId}`, {
                 rating: newRating,
+                ranking: item.ranking,
                 notes: item.notes || '',
                 price_threshold: item.price_threshold || '0',
-                wishlist: activeTab === 'wantlist' ? 1 : 0
+                wishlist: activeTab === 'wantlist' ? 1 : 0,
+                // Include release data for record creation if needed
+                title: item.title,
+                artist: item.artist,
+                release_year: item.release_year,
+                genre: item.genre,
+                styles: item.styles,
+                thumb_url: item.thumb_url,
+                cover_image_url: item.cover_image_url
             });
 
             // Update local state for both collection and wantlist
@@ -70,42 +137,173 @@ const RatingScreen = () => {
         }
     };
 
-    const handleSyncWithDiscogs = async () => {
-        if (!authState.username) {
-            alert('Discogs username not found. Please log in again.');
-            return;
-        }
-
-        setSyncing(true);
-        setSyncMessage('Syncing with Discogs...');
-        
+    const handleRankingChange = async (discogsId, newRanking) => {
         try {
-            const response = await postData(`/api/users/${authState.userId}/sync-discogs`, {
-                username: authState.username
+            const currentData = activeTab === 'collection' ? collection : wantlist;
+            const item = currentData.find(item => item.discogs_id === discogsId);
+            if (!item) return;
+
+            // If setting a ranking, we need to adjust other rankings
+            let updatedData = [...currentData];
+            
+            if (newRanking !== null && newRanking !== undefined) {
+                // Find if another item has this ranking
+                const existingRankedItem = updatedData.find(
+                    i => i.ranking === newRanking && i.discogs_id !== discogsId
+                );
+                
+                // If an item exists with this ranking, shift rankings
+                if (existingRankedItem) {
+                    // Get all items with rankings >= newRanking
+                    const itemsToShift = updatedData.filter(
+                        i => i.ranking !== null && i.ranking >= newRanking && i.discogs_id !== discogsId
+                    );
+                    
+                    // Shift their rankings up by 1
+                    for (const shiftItem of itemsToShift) {
+                        await updateData(`/api/users/${authState.userId}/collection/${shiftItem.discogs_id}`, {
+                            rating: shiftItem.rating,
+                            ranking: shiftItem.ranking + 1,
+                            notes: shiftItem.notes || '',
+                            price_threshold: shiftItem.price_threshold || '0',
+                            wishlist: activeTab === 'wantlist' ? 1 : 0,
+                            // Include release data for record creation if needed
+                            title: shiftItem.title,
+                            artist: shiftItem.artist,
+                            release_year: shiftItem.release_year,
+                            genre: shiftItem.genre,
+                            styles: shiftItem.styles,
+                            thumb_url: shiftItem.thumb_url,
+                            cover_image_url: shiftItem.cover_image_url
+                        });
+                    }
+                }
+            }
+
+            // Update the main item's ranking
+            await updateData(`/api/users/${authState.userId}/collection/${discogsId}`, {
+                rating: item.rating,
+                ranking: newRanking,
+                notes: item.notes || '',
+                price_threshold: item.price_threshold || '0',
+                wishlist: activeTab === 'wantlist' ? 1 : 0,
+                // Include release data for record creation if needed
+                title: item.title,
+                artist: item.artist,
+                release_year: item.release_year,
+                genre: item.genre,
+                styles: item.styles,
+                thumb_url: item.thumb_url,
+                cover_image_url: item.cover_image_url
             });
-            
-            setSyncMessage(`Successfully synced ${response.syncedCount} items from Discogs!`);
-            
-            // Reload data after sync
+
+            // Reload data to get fresh rankings
             await loadData();
-            
-            // Clear message after 5 seconds
-            setTimeout(() => {
-                setSyncMessage('');
-            }, 5000);
-            
         } catch (err) {
-            console.error('Error syncing with Discogs:', err);
-            setSyncMessage('Failed to sync with Discogs. Please try again.');
-            
-            // Clear error message after 5 seconds
-            setTimeout(() => {
-                setSyncMessage('');
-            }, 5000);
-        } finally {
-            setSyncing(false);
+            console.error('Error updating ranking:', err);
+            alert('Failed to update ranking. Please try again.');
         }
     };
+
+    const handleTop5Change = async (position, selectedDiscogsId) => {
+        if (!selectedDiscogsId) return;
+        
+        try {
+            const currentData = activeTab === 'collection' ? collection : wantlist;
+            const selectedItem = currentData.find(item => item.discogs_id === parseInt(selectedDiscogsId));
+            if (!selectedItem) return;
+
+            // Get current top 5
+            const currentTop5 = currentData
+                .filter(item => item.ranking !== null && item.ranking >= 1 && item.ranking <= 5)
+                .sort((a, b) => a.ranking - b.ranking);
+
+            // Find the item currently at this position
+            const currentItemAtPosition = currentTop5.find(item => item.ranking === position);
+
+            // If the selected item already has a ranking, swap with current position
+            if (selectedItem.ranking !== null && selectedItem.ranking >= 1 && selectedItem.ranking <= 5) {
+                // Swap rankings
+                if (currentItemAtPosition && currentItemAtPosition.discogs_id !== selectedItem.discogs_id) {
+                    await updateData(`/api/users/${authState.userId}/collection/${currentItemAtPosition.discogs_id}`, {
+                        rating: currentItemAtPosition.rating,
+                        ranking: selectedItem.ranking,
+                        notes: currentItemAtPosition.notes || '',
+                        price_threshold: currentItemAtPosition.price_threshold || '0',
+                        wishlist: activeTab === 'wantlist' ? 1 : 0,
+                        // Include release data for record creation if needed
+                        title: currentItemAtPosition.title,
+                        artist: currentItemAtPosition.artist,
+                        release_year: currentItemAtPosition.release_year,
+                        genre: currentItemAtPosition.genre,
+                        styles: currentItemAtPosition.styles,
+                        thumb_url: currentItemAtPosition.thumb_url,
+                        cover_image_url: currentItemAtPosition.cover_image_url
+                    });
+                }
+                
+                await updateData(`/api/users/${authState.userId}/collection/${selectedItem.discogs_id}`, {
+                    rating: selectedItem.rating,
+                    ranking: position,
+                    notes: selectedItem.notes || '',
+                    price_threshold: selectedItem.price_threshold || '0',
+                    wishlist: activeTab === 'wantlist' ? 1 : 0,
+                    // Include release data for record creation if needed
+                    title: selectedItem.title,
+                    artist: selectedItem.artist,
+                    release_year: selectedItem.release_year,
+                    genre: selectedItem.genre,
+                    styles: selectedItem.styles,
+                    thumb_url: selectedItem.thumb_url,
+                    cover_image_url: selectedItem.cover_image_url
+                });
+            } else {
+                // Item not in top 5, move current item out and add new item
+                if (currentItemAtPosition) {
+                    // Remove ranking from current item
+                    await updateData(`/api/users/${authState.userId}/collection/${currentItemAtPosition.discogs_id}`, {
+                        rating: currentItemAtPosition.rating,
+                        ranking: null,
+                        notes: currentItemAtPosition.notes || '',
+                        price_threshold: currentItemAtPosition.price_threshold || '0',
+                        wishlist: activeTab === 'wantlist' ? 1 : 0,
+                        // Include release data for record creation if needed
+                        title: currentItemAtPosition.title,
+                        artist: currentItemAtPosition.artist,
+                        release_year: currentItemAtPosition.release_year,
+                        genre: currentItemAtPosition.genre,
+                        styles: currentItemAtPosition.styles,
+                        thumb_url: currentItemAtPosition.thumb_url,
+                        cover_image_url: currentItemAtPosition.cover_image_url
+                    });
+                }
+                
+                // Add new item to this position
+                await updateData(`/api/users/${authState.userId}/collection/${selectedItem.discogs_id}`, {
+                    rating: selectedItem.rating,
+                    ranking: position,
+                    notes: selectedItem.notes || '',
+                    price_threshold: selectedItem.price_threshold || '0',
+                    wishlist: activeTab === 'wantlist' ? 1 : 0,
+                    // Include release data for record creation if needed
+                    title: selectedItem.title,
+                    artist: selectedItem.artist,
+                    release_year: selectedItem.release_year,
+                    genre: selectedItem.genre,
+                    styles: selectedItem.styles,
+                    thumb_url: selectedItem.thumb_url,
+                    cover_image_url: selectedItem.cover_image_url
+                });
+            }
+
+            // Reload data
+            await loadData();
+        } catch (err) {
+            console.error('Error updating top 5:', err);
+            alert('Failed to update top 5. Please try again.');
+        }
+    };
+
 
     const getFilteredAndSortedData = () => {
         const currentData = activeTab === 'collection' ? collection : wantlist;
@@ -135,6 +333,11 @@ const RatingScreen = () => {
                     aValue = a.rating || 0;
                     bValue = b.rating || 0;
                     break;
+                case 'ranking':
+                    // Put unranked items at the end
+                    aValue = a.ranking === null ? 999999 : a.ranking;
+                    bValue = b.ranking === null ? 999999 : b.ranking;
+                    break;
                 case 'date_added':
                     aValue = new Date(a.created_at || 0);
                     bValue = new Date(b.created_at || 0);
@@ -152,6 +355,18 @@ const RatingScreen = () => {
         });
 
         return filtered;
+    };
+
+    const getTop5 = () => {
+        const currentData = activeTab === 'collection' ? collection : wantlist;
+        const top5 = [];
+        
+        for (let i = 1; i <= 5; i++) {
+            const item = currentData.find(item => item.ranking === i);
+            top5.push(item || null);
+        }
+        
+        return top5;
     };
 
     const renderStars = (currentRating, discogsId) => {
@@ -250,50 +465,6 @@ const RatingScreen = () => {
                             </button>
                         </li>
                     </ul>
-                    
-                    {/* Sync Section */}
-                    <div className="row mb-4">
-                        <div className="col-12">
-                            <div className="card">
-                                <div className="card-body">
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 className="card-title mb-1">
-                                                <i className="fas fa-sync-alt me-2"></i>
-                                                Sync with Discogs
-                                            </h5>
-                                            <p className="card-text text-muted mb-0">
-                                                Import your collection and wantlist from Discogs to start rating your items.
-                                            </p>
-                                        </div>
-                                        <button 
-                                            className="btn btn-primary"
-                                            onClick={handleSyncWithDiscogs}
-                                            disabled={syncing}
-                                        >
-                                            {syncing ? (
-                                                <>
-                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                    Syncing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className="fas fa-sync-alt me-2"></i>
-                                                    Sync Now
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                    {syncMessage && (
-                                        <div className={`alert ${syncMessage.includes('Successfully') ? 'alert-success' : 'alert-danger'} mt-3 mb-0`} role="alert">
-                                            {syncMessage}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
                     {/* Statistics */}
                     <div className="row mb-4">
                         <div className="col-md-3">
@@ -330,6 +501,89 @@ const RatingScreen = () => {
                         </div>
                     </div>
 
+                    {/* Top 5 Management */}
+                    <div className="row mb-4">
+                        <div className="col-12">
+                            <div className="card">
+                                <div className="card-body">
+                                    <h5 className="card-title mb-3">
+                                        <i className="fas fa-trophy me-2" style={{color: '#ffc107'}}></i>
+                                        Top 5 {activeTab === 'collection' ? 'Collection' : 'Wantlist'} Items
+                                    </h5>
+                                    <div className="row">
+                                        {[1, 2, 3, 4, 5].map((position) => {
+                                            const top5 = getTop5();
+                                            const item = top5[position - 1];
+                                            const currentData = activeTab === 'collection' ? collection : wantlist;
+                                            
+                                            return (
+                                                <div key={position} className="col-md-12 mb-3">
+                                                    <div className="d-flex align-items-center">
+                                                        <div style={{
+                                                            width: '40px',
+                                                            height: '40px',
+                                                            borderRadius: '50%',
+                                                            background: position === 1 ? '#ffd700' : position === 2 ? '#c0c0c0' : position === 3 ? '#cd7f32' : '#6c757d',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontWeight: 'bold',
+                                                            color: 'white',
+                                                            marginRight: '15px',
+                                                            fontSize: '1.2em'
+                                                        }}>
+                                                            {position}
+                                                        </div>
+                                                        <div style={{flex: 1}}>
+                                                            <select
+                                                                className="form-select"
+                                                                value={item ? item.discogs_id : ''}
+                                                                onChange={(e) => handleTop5Change(position, e.target.value)}
+                                                            >
+                                                                <option value="">Select an item...</option>
+                                                                {currentData
+                                                                    .sort((a, b) => {
+                                                                        const aTitle = a.title?.toLowerCase() || '';
+                                                                        const bTitle = b.title?.toLowerCase() || '';
+                                                                        return aTitle.localeCompare(bTitle);
+                                                                    })
+                                                                    .map((dataItem) => (
+                                                                        <option key={dataItem.discogs_id} value={dataItem.discogs_id}>
+                                                                            {dataItem.title} - {dataItem.artist}
+                                                                            {dataItem.ranking !== null && dataItem.ranking !== position ? ` (Currently #${dataItem.ranking})` : ''}
+                                                                        </option>
+                                                                    ))}
+                                                            </select>
+                                                        </div>
+                                                        {item && (
+                                                            <div style={{marginLeft: '15px', display: 'flex', alignItems: 'center'}}>
+                                                                <Link to={`/release/${item.discogs_id}`}>
+                                                                    <img 
+                                                                        src={item.thumb_url || item.cover_image_url || 'https://via.placeholder.com/50x50/cccccc/666666?text=No+Image'}
+                                                                        alt={item.title}
+                                                                        style={{
+                                                                            width: '50px',
+                                                                            height: '50px',
+                                                                            objectFit: 'cover',
+                                                                            borderRadius: '4px'
+                                                                        }}
+                                                                        onError={(e) => {
+                                                                            e.target.src = 'https://via.placeholder.com/50x50/cccccc/666666?text=No+Image';
+                                                                        }}
+                                                                    />
+                                                                </Link>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Filters and Sorting */}
                     <div className="row mb-3">
                         <div className="col-md-6">
@@ -356,6 +610,7 @@ const RatingScreen = () => {
                                 <option value="title">Title</option>
                                 <option value="artist">Artist</option>
                                 <option value="rating">Rating</option>
+                                <option value="ranking">Ranking</option>
                                 <option value="date_added">Date Added</option>
                             </select>
                         </div>
@@ -387,7 +642,29 @@ const RatingScreen = () => {
                         ) : (
                             filteredData.map((item) => (
                                 <div key={item.discogs_id} className="col-md-6 col-lg-4 mb-3">
-                                    <div className="card h-100">
+                                    <div className="card h-100" style={{position: 'relative'}}>
+                                        {/* Ranking Badge */}
+                                        {item.ranking !== null && item.ranking !== undefined && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '10px',
+                                                left: '10px',
+                                                width: '30px',
+                                                height: '30px',
+                                                borderRadius: '50%',
+                                                background: item.ranking <= 3 ? (item.ranking === 1 ? '#ffd700' : item.ranking === 2 ? '#c0c0c0' : '#cd7f32') : '#6c757d',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontWeight: 'bold',
+                                                color: 'white',
+                                                fontSize: '0.9em',
+                                                zIndex: 10,
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                            }}>
+                                                #{item.ranking}
+                                            </div>
+                                        )}
                                         <div className="row g-0">
                                             <div className="col-4">
                                                 <Link to={`/release/${item.discogs_id}`}>
@@ -439,12 +716,39 @@ const RatingScreen = () => {
                                                         {renderStars(item.rating || 0, item.discogs_id)}
                                                     </div>
 
+                                                    {/* Ranking Input */}
+                                                    <div className="mb-2">
+                                                        <label style={{fontSize: '0.8em', marginBottom: '2px', display: 'block'}}>
+                                                            Ranking:
+                                                        </label>
+                                                        <select
+                                                            className="form-select form-select-sm"
+                                                            value={item.ranking !== null && item.ranking !== undefined ? item.ranking : ''}
+                                                            onChange={(e) => handleRankingChange(item.discogs_id, e.target.value ? parseInt(e.target.value) : null)}
+                                                            style={{fontSize: '0.8em'}}
+                                                        >
+                                                            <option value="">No ranking</option>
+                                                            {[...Array(100)].map((_, i) => (
+                                                                <option key={i + 1} value={i + 1}>
+                                                                    #{i + 1}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+
                                                     {/* Current Rating Display */}
-                                                    {item.rating && item.rating > 0 && (
-                                                        <small className="text-muted">
-                                                            Rated: {item.rating}/5
-                                                        </small>
-                                                    )}
+                                                    <div className="d-flex justify-content-between align-items-center">
+                                                        {item.rating && item.rating > 0 && (
+                                                            <small className="text-muted">
+                                                                Rated: {item.rating}/5
+                                                            </small>
+                                                        )}
+                                                        {item.ranking !== null && item.ranking !== undefined && (
+                                                            <small className="text-muted">
+                                                                Rank: #{item.ranking}
+                                                            </small>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
